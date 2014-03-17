@@ -62,16 +62,16 @@ architecture Behavioral of toplevel is
                                  clk : in std_logic);
   end component;
   
---   component Lab4a                             
---    generic(             C_FAMILY : string := "S6"; 
---                C_RAM_SIZE_KWORDS : integer := 1;
---             C_JTAG_LOADER_ENABLE : integer := 0);
---    Port (      address : in std_logic_vector(11 downto 0);
---            instruction : out std_logic_vector(17 downto 0);
---                 enable : in std_logic;
---                    rdl : out std_logic;                    
---                    clk : in std_logic);
---  end component; 
+   component atlys_real_time_clock                             
+    generic(             C_FAMILY : string := "S6"; 
+                C_RAM_SIZE_KWORDS : integer := 1;
+             C_JTAG_LOADER_ENABLE : integer := 0);
+    Port (      address : in std_logic_vector(11 downto 0);
+            instruction : out std_logic_vector(17 downto 0);
+                 enable : in std_logic;
+                    rdl : out std_logic;                    
+                    clk : in std_logic);
+  end component; 
   
 	component uart_tx6
 		Port ( data_in : in std_logic_vector(7 downto 0);
@@ -120,6 +120,7 @@ signal uart_tx_data_present : std_logic;
 signal    uart_tx_half_full : std_logic;
 signal         uart_tx_full : std_logic;
 signal         uart_tx_reset : std_logic;
+signal			buffer_write : std_logic;
 --
 -- Signals used to connect UART_RX6
 --
@@ -129,6 +130,7 @@ signal uart_rx_data_present : std_logic;
 signal    uart_rx_half_full : std_logic;
 signal         uart_rx_full : std_logic;
 signal        uart_rx_reset : std_logic;
+signal			buffer_read  : std_logic;
 --
 -- Signals used to define baud rate
 --
@@ -139,10 +141,10 @@ signal         en_16_x_baud : std_logic := '0';
 begin
 
  tx: uart_tx6 
-  port map (              data_in => uart_rx_data_out,
+  port map (              data_in => uart_tx_data_in,
                      en_16_x_baud => en_16_x_baud,
                        serial_out => uart_tx,
-                     buffer_write => uart_rx_full,
+                     buffer_write => write_to_uart_tx,
               buffer_data_present => uart_tx_data_present,
                  buffer_half_full => uart_tx_half_full,
                       buffer_full => uart_tx_full,
@@ -153,17 +155,21 @@ begin
   port map (            serial_in => uart_rx,
                      en_16_x_baud => en_16_x_baud,
                          data_out => uart_rx_data_out,
-                      buffer_read => uart_tx_full,
+                      buffer_read => read_from_uart_rx,
               buffer_data_present => uart_rx_data_present,
                  buffer_half_full => uart_rx_half_full,
                       buffer_full => uart_rx_full,
                      buffer_reset => uart_rx_reset,              
                               clk => clk);
+										
+	read_from_uart_rx <= uart_tx_data_present;
+	write_to_uart_tx <= uart_rx_data_present;
+	uart_tx_data_in <= uart_rx_data_out;
 
   baud_rate: process(clk)
   begin
     if clk'event and clk = '1' then
-      if baud_count = 162 then                    -- counts 27 states including zero
+      if baud_count = 163 then                    -- counts 27 states including zero
         baud_count <= 0;
         en_16_x_baud <= '1';                     -- single cycle enable pulse
        else
@@ -175,78 +181,7 @@ begin
 
 
 
-  processor: kcpsm6
-    generic map (                 hwbuild => X"00", 
-                         interrupt_vector => X"3FF",
-                  scratch_pad_memory_size => 64)
-    port map(      address => address,
-               instruction => instruction,
-               bram_enable => bram_enable,
-                   port_id => port_id,
-              write_strobe => write_strobe,
-            k_write_strobe => k_write_strobe,
-                  out_port => out_port,
-               read_strobe => read_strobe,
-                   in_port => in_port,
-                 interrupt => interrupt,
-             interrupt_ack => interrupt_ack,
-                     sleep => kcpsm6_sleep,
-                     reset => kcpsm6_reset,
-                       clk => clk);
-							  
---  program_rom: Lab4a				                   --Name to match your PSM file
---    generic map(             C_FAMILY => "S6",   --Family 'S6', 'V6' or '7S'
---                    C_RAM_SIZE_KWORDS => 2,      --Program size '1', '2' or '4'
---                 C_JTAG_LOADER_ENABLE => 1)      --Include JTAG Loader when set to '1' 
---    port map(      address => address,      
---               instruction => instruction,
---                    enable => bram_enable,
---                       rdl => kcpsm6_reset,
---                       clk => clk);		
---							  
-  kcpsm6_sleep <= '0';
-  interrupt <= interrupt_ack;
---
---  input_ports: process(clk)
---  begin
---    if clk'event and clk = '1' then
---
---      case port_id is
---
---        -- Read input_port_a at port address 00 hex
---        when x"AF" =>    in_port <= switch;
---
---        -- Read input_port_b at port address 01 hex
---        when x"07" =>    in_port <= buttons_sig;
---
---        when others =>    in_port <= "00000000";  
---
---      end case;
---
---    end if;
---
---  end process input_ports;	
---  
---  buttons_sig <= "0000" & buttons(3 downto 0);
---  
---  output_ports: process(clk)
---  begin
---
---    if clk'event and clk = '1' then
---
---      -- 'write_strobe' is used to qualify all writes to general output ports.
---      if write_strobe = '1' then
---
---        -- Write to output_port_w at port address 01 hex
---        if port_id(0) = '1' then
---          LED <= out_port;
---        end if;
---
---      end if;
---
---    end if; 
---
---  end process output_ports;
+
 
 end Behavioral;
 
