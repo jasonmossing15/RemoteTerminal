@@ -1,0 +1,27 @@
+;**********************************************
+; \navConst Constants - Navigator entry
+;**********************************************
+data_in			EQU 	$AF
+buffer_read		EQU	$08
+data_out		EQU	$AF
+LED_in			EQU	$BC
+LED_out			EQU	$BC
+swtch			EQU	$07
+temp_data		EQU	s0
+temp_read		EQU	s1
+
+Main:	IN	temp_read, buffer_read
+	COMP	temp_read, 1
+	JUMP	NZ, Main
+
+R_W:	IN 	temp_data, data_in
+	OUT	temp_data, data_out
+	JUMP 	Main
+	
+ISR:	RETI	ENABLE
+
+; have to do new line and charage return to go to the beginning of the next line
+
+
+ORG	0x3FF
+	JUMP ISR
