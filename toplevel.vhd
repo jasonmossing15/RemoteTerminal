@@ -134,7 +134,7 @@ signal			buffer_read  : std_logic;
 --
 -- Signals used to define baud rate
 --
-signal           baud_count : integer range 0 to 162 := 0; 
+signal           baud_count : integer range 0 to 652 := 0; 
 signal         en_16_x_baud : std_logic := '0';
 --
 
@@ -169,7 +169,7 @@ begin
   baud_rate: process(clk)
   begin
     if clk'event and clk = '1' then
-      if baud_count = 163 then                    -- counts 27 states including zero
+      if baud_count = 651 then                    -- counts 27 states including zero
         baud_count <= 0;
         en_16_x_baud <= '1';                     -- single cycle enable pulse
        else

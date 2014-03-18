@@ -58,7 +58,7 @@ ARCHITECTURE behavior OF uart_tb IS
 
 
    -- Clock period definitions
-   constant clk_period : time := 40 ns;
+   constant clk_period : time := 10 ns;
  
 BEGIN
  
