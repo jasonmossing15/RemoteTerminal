@@ -5,42 +5,85 @@ data_in			EQU 	$AF
 buffer_read		EQU	$08
 data_out		EQU	$AF
 LED_in			EQU	$BC
-LED_out			EQU	$BC
-switch			EQU	$07
+LED_Top			EQU	$BC
+LED_Btm			EQU	$BD
+swtTop			EQU	$06
+swtBtm			EQU	$07
 Space			EQU	$20
 NewLine			EQU	$0A
 CR			EQU	$0D ;Charage Return
+l			EQU	$6C
+e			EQU	$65
+d			EQU	$64
+s			EQU	$73
+w			EQU	$77
+t			EQU	$74
 temp_read		EQU	s0
-temp_char1		EQU	s1
-temp_char2		EQU	s2
-temp_char3		EQU	s3
+char1			EQU	s1
+char2			EQU	s2
+char3			EQU	s3
 temp_data		EQU	s4
-count			EQU	s5
 
-Main:	LOAD	count, 0
-Start:	IN	temp_read, buffer_read
-	COMP	temp_read, 1
-	JUMP	NZ, Start
-	
-	COMP 	count, 0
-	JUMP	Z, R_W1
-	COMP 	count, 1
-	JUMP	Z, R_W2
-	COMP 	count, 2
-	JUMP	Z, R_W3
+Main:	
+	CALL	Poll	
 
-R_W1:	IN 	temp_char1, data_in
-	OUT	temp_char1, data_out
-	ADD	count, 1
-	JUMP 	Start
+
+R_W1:	IN 	char1, data_in
+	OUT	char1, data_out
+	CALL	Poll
 	
-R_W2:	IN 	temp_char2, data_in
-	OUT	temp_char2, data_out
-	ADD	count, 1
-	JUMP 	Start
+R_W2:	IN 	char2, data_in
+	OUT	char2, data_out
+	CALL	Poll
 	
-R_W3:	IN 	temp_char3, data_in
-	OUT	temp_char3, data_out
+R_W3:	IN 	char3, data_in
+	OUT	char3, data_out
+	
+	COMP	char1, s
+	JUMP	Z, swtTest
+	
+	COMP 	char1, l
+	JUMP	NZ, ResetLine
+	
+ledTest:
+	COMP	char2, e
+	JUMP	NZ, ResetLine 
+	
+	COMP	char3, d
+	JUMP	NZ, ResetLine	
+	
+	LOAD	temp_data, Space
+	OUT	temp_data, data_out
+	
+	CALL 	Poll
+	IN	temp_data, data_in
+	OUT	temp_data, data_out
+	OUT	temp_data, LED_Top
+	
+	
+	CALL	Poll
+	IN	temp_data, data_in
+	OUT	temp_data, data_out
+	OUT	temp_data, LED_Btm
+	
+	JUMP	ResetLine
+
+swtTest:
+	COMP	char2, w
+	JUMP	NZ, ResetLine 
+	
+	COMP	char3, t
+	JUMP	NZ, ResetLine	
+	
+	LOAD	temp_data, Space
+	OUT	temp_data, data_out
+	
+	IN	temp_data, swtTop
+	OUT	temp_data, data_out
+	
+	IN	temp_data, swtBtm
+	OUT	temp_data, data_out
+
 
 ResetLine:
 	LOAD	temp_data, NewLine
@@ -49,6 +92,11 @@ ResetLine:
 	OUT	temp_data, data_out
 	
 	JUMP 	Main
+	
+Poll:	IN	temp_read, buffer_read
+	COMP	temp_read, 1
+	JUMP	NZ, Poll
+	RET
 	
 ISR:	RETI	ENABLE
 

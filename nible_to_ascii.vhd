@@ -15,12 +15,12 @@ use IEEE.NUMERIC_STD.ALL;
 library UNISIM;
 use UNISIM.VComponents.all;
 
-entity nible_to_ascii is
+entity nibble_to_ascii is
     Port ( nibble : in  STD_LOGIC_VECTOR (3 downto 0);
            ascii : out  STD_LOGIC_VECTOR (7 downto 0));
-end nible_to_ascii;
+end nibble_to_ascii;
 
-architecture Behavioral of nible_to_ascii is
+architecture Behavioral of nibble_to_ascii is
 
 begin
 

@@ -23,10 +23,9 @@ entity toplevel is
 		 clk : in std_logic;
 		 reset : in std_logic;
 		 uart_rx : in std_logic;
-       uart_tx : out std_logic
---		 switch : in std_logic_vector(7 downto 0);
---		 buttons : in std_logic_vector(3 downto 0);
---		 LED : out std_logic_vector(7 downto 0)
+       uart_tx : out std_logic;
+		 switch : in std_logic_vector(7 downto 0);
+		 LED : out std_logic_vector(7 downto 0)
 		);
 end toplevel;
 
@@ -86,6 +85,16 @@ architecture Behavioral of toplevel is
 		buffer_reset : in std_logic;
 		clk : in std_logic);
 	end component;
+	
+	component ascii_to_nibble
+		Port ( ascii : in  STD_LOGIC_VECTOR (7 downto 0);
+       nibble : out  STD_LOGIC_VECTOR (3 downto 0));
+	end component;
+	
+	component nibble_to_ascii
+		Port ( nibble : in  STD_LOGIC_VECTOR (3 downto 0);
+       ascii : out  STD_LOGIC_VECTOR (7 downto 0));
+	end component;
   
 signal         address : std_logic_vector(11 downto 0);
 signal     instruction : std_logic_vector(17 downto 0);
@@ -128,6 +137,10 @@ signal			buffer_read  : std_logic;
 signal           baud_count : integer range 0 to 652 := 0; 
 signal         en_16_x_baud : std_logic := '0';
 --
+signal	nibble, top, bottom, top_reg, bottom_reg, top_next, bottom_next :  STD_LOGIC_VECTOR (3 downto 0);
+signal	switchTop, switchBottom :  STD_LOGIC_VECTOR (3 downto 0);
+signal	asciiTop, asciiBottom : std_logic_vector (7 downto 0);
+
 
 begin
 
@@ -219,6 +232,12 @@ begin
 		  --buffer
 		  when x"08" => in_port <= "0000000" & uart_rx_data_present; 
 		  
+		  --switch top
+		  when x"06" => in_port <= asciiTop;
+		  
+		  --switch bottom
+		  when x"07" => in_port <= asciiBottom;
+		  
         when others =>    in_port <= "00000000";  
 
       end case;
@@ -226,8 +245,49 @@ begin
     end if;
   end process input_ports;
   
+  	a_n : ascii_to_nibble
+		Port Map ( 
+			ascii => out_port,
+			nibble => nibble);
+			
+top <= top_reg;
+bottom <= bottom_reg;
+
+LED <= top & bottom;
+
+top_next <= nibble when (write_strobe = '1') and (port_id = x"BC") else 
+				top_reg;
+
+bottom_next <= nibble when (write_strobe = '1') and (port_id = x"BD") else 
+				bottom_reg;
+
+Process (clk, reset)
+begin
+	if reset = '1' then
+		top_reg <= "0000";
+		bottom_reg <= "0000";
+	elsif rising_edge(clk) then
+		top_reg <= top_next;
+		bottom_reg <= bottom_next;
+	end if;
+end process;
   
 
+  	nib_top : nibble_to_ascii
+		Port Map ( 
+			nibble => switchTop,
+			ascii => asciiTop
+			);
+			
+	nib_btm : nibble_to_ascii
+		Port Map ( 
+			nibble => switchBottom,
+			ascii => asciiBottom
+			);
+
+switchTop <= switch(7 downto 4);
+
+switchBottom <= switch(3 downto 0);
 
 end Behavioral;
 
