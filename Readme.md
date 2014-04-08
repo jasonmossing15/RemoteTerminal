@@ -1,9 +1,9 @@
 # Remote Terminal
 
-This lab has two main sections: use of picoblaze microblaze. The use of both these programs result in the same functionality. This functionality is the input of 3 character commands. When the commands swt or led are inputted then it will result in output of the switch values and input of 2 hexidecimal digits to output the respective led value.
+This lab has two main sections: use of picoblaze and microblaze. The use of both these programs result in the same functionality. This functionality is the input of 3 character commands. When the commands swt or led are inputted then it will result in output of the switch values and input of 2 hexidecimal digits to output the respective led value.
 
 ## PicoBlaze
-PicoBlaze implementation invovled more work within the ISE Project Navigator, which is what we have been using. This was completed by using the openPICIDE program then converting the .psm file to a .vhd. Once this was completed then components and signals were connected in the ISE Project Navigator. The biggest issue I had with the PicoBlaze was the initial attempt to echo back a character. This was fixed by hooking up the opposite data present signals to the uart components, i.e: for the tx: `buffer_write => uart_rx_data_present,` and for rx: buffer_read => uart_tx_data_present,`. This issue was also fixed by creating a valid test bench. After this step was complete then it was just comprehending what was in the readme and adding it in/ changing it when needed. One example of this is the final read and write buffers.
+PicoBlaze implementation invovled more work within the ISE Project Navigator, which is what we have been using. This was completed by using the openPICIDE program then converting the .psm file to a .vhd. Once this was completed then components and signals were connected in the ISE Project Navigator. The biggest issue I had with the PicoBlaze was the initial attempt to echo back a character. This was fixed by hooking up the opposite data present signals to the uart components, i.e: for the tx: `buffer_write => uart_rx_data_present,` and for rx: `buffer_read => uart_tx_data_present,`. This issue was also fixed by creating a valid test bench. After this step was complete then it was just comprehending what was in the datasheet and adding it in/changing it when needed. One example of this is the final read and write buffers.
 
 ```
 read_from_uart_rx <= '1' when (read_strobe = '1') and (port_id = x"AF") else
@@ -18,12 +18,12 @@ One of the biggest takeaways from this portion was being able to read documentat
 
 The following is a representation of how the components are connected in MicroBlaze.
 
-(insert connection picture here)
+![MicroBlaze Connections](MicroBlazeConnections.JPG)
 
-This portion was a lot similar to how we programmed in 382, so in my opinion it was easier. This however, took much longer to build a bit stream, so you always hope your hardware code in Xilinx works the first time. Once in the SDK program it was a lot easier to code the FPGA to do what you want. Coding in C was a lot easier for this project than it was to code in VHDL. The big issues I ran into were the output to the LEDs and reading values from the switches. After reading through the `xil_io.h` file I found a `Xil_Out8(Address, value)` function that used 8 bits instead of the `Xil_Out32(Address, value)` that was used in the tutorial. Once this function was used, my LEDs worked! The switches took a little more figuring out. I ended up googeling "how to input peripherals using microblaze". This resulted in finding that I needed to change the values of the slave registers within the `user_logic.vhd`. This was done with the following code:
+This portion was a lot similar to how we programmed in 382, so in my opinion it was easier. This however, took much longer to build a bit stream, so you always hope your hardware code in Xilinx works the first time. Once in the SDK program it was a lot easier to code the FPGA to do what you want. Coding in C was a lot easier for this project than it was to code in VHDL due to the sequential logic used. The big issues I ran into were the output to the LEDs and reading values from the switches. After reading through the `xil_io.h` file I found a `Xil_Out8(Address, value)` function that used 8 bits instead of the `Xil_Out32(Address, value)` that was used in the tutorial. Once this function was used, my LEDs worked! The switches took a little more figuring out. I ended up googeling "how to input peripherals using microblaze". This resulted in finding that I needed to change the values of the slave registers within the `user_logic.vhd`. This was done with the following code:
 ```
     case slv_reg_read_sel is
-          when "10000000" => slv_ip2bus_data <= slv_reg0(C_SLV_DWIDTH-1 downto 8) & SWITCH;
+	  when "10000000" => slv_ip2bus_data <= slv_reg0(C_SLV_DWIDTH-1 downto 8) & SWITCH;
 	  when "01000000" => slv_ip2bus_data <= slv_reg1(C_SLV_DWIDTH-1 downto 8) & SWITCH;
 	  when "00100000" => slv_ip2bus_data <= slv_reg2(C_SLV_DWIDTH-1 downto 8) & SWITCH;
 	  when "00010000" => slv_ip2bus_data <= slv_reg3(C_SLV_DWIDTH-1 downto 8) & SWITCH;
@@ -34,7 +34,7 @@ This portion was a lot similar to how we programmed in 382, so in my opinion it 
 	  when others => slv_ip2bus_data <= (others => '0');
     end case;
 ```
-Using this along with the `Xil_In8(Address)` function allowed me to successfullyread in the switch values.
+Using this along with the `Xil_In8(Address)` function allowed me to successfully read in the switch values.
 
 
 ## Test/Debug
